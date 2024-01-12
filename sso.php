@@ -49,6 +49,7 @@ function sso_check() {
 			wp_set_auth_cookie( $user->ID );
 			do_action( 'wp_login', $user->user_login, $user );
 			delete_transient( 'sso_token' );
+			delete_option( 'sso_token' );
 			wp_safe_redirect( admin_url( $bounce ) );
 		} else {
 			sso_req_login();
