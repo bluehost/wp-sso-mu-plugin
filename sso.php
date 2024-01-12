@@ -34,7 +34,11 @@ function sso_check() {
 	$hash   = base64_encode( hash( 'sha256', $nonce . $salt, false ) );
 	$hash   = substr( $hash, 0, 64 );
 
-	if ( get_transient( 'sso_token' ) == $hash ) {
+	$token = get_transient( 'sso_token' );
+	if ( $token === false ) {
+		$token = get_option( 'sso_token' );
+	}
+	if ( $token == $hash ) {
 		if ( is_email( $user ) ) {
 			$user = get_user_by( 'email', $user );
 		} else {
