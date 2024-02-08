@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SSO
  * Author: Garth Mortensen, Mike Hansen
- * Version: 0.4
+ * Version: 0.5
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  */
@@ -17,6 +17,8 @@ function sso_check() {
 
 	$nonce = esc_attr( $_GET['nonce'] );
 	$salt  = esc_attr( $_GET['salt'] );
+	$has_epoch = preg_match('/-e(\d+)$/', $nonce, $epoch);
+	$expired = ( $has_epoch && (time() - $epoch[1]) > 300 ) ? true : false;
 
 	if ( ! empty( $_GET['user'] ) ) {
 		$user = esc_attr( $_GET['user'] );
@@ -34,11 +36,20 @@ function sso_check() {
 	$hash   = base64_encode( hash( 'sha256', $nonce . $salt, false ) );
 	$hash   = substr( $hash, 0, 64 );
 
-	if ( get_transient( 'sso_token' ) == $hash ) {
+	$token = get_transient( 'sso_token' );
+	$from_options = false;
+	if ( $token === false ) {
+		$token = get_option( 'sso_token' );
+		$from_options = true;
+	}
+	if ( ! $expired && $token == $hash ) {
 		if ( is_email( $user ) ) {
 			$user = get_user_by( 'email', $user );
 		} else {
 			$user = get_user_by( 'id', (int) $user );
+		}
+		if ( $from_options ) {
+			delete_option( 'sso_token' );
 		}
 		if ( is_a( $user, 'WP_User' ) ) {
 			wp_set_current_user( $user->ID, $user->user_login );
